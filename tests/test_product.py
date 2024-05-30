@@ -1,23 +1,20 @@
 from flask.testing import FlaskClient, FlaskCliRunner
 from click.testing import Result
 from app import models as m, db
+from app.controllers import parse_csv
 
 
 def test_get_product(client: FlaskClient):
-    response = client.get("/1")
+    parse_csv()
+    product: m.Product = db.session.scalar(m.Product.select())
+
+    response = client.get(f"/{product.id}")
     assert response.status_code == 200
-    assert response
-
-
-"""
-def test_create_admin(runner: FlaskCliRunner):
-    res: Result = runner.invoke(args=["create-admin"])
-"""
+    assert response.json["asin"] == product.asin
+    assert response.json["title"] == product.title
 
 
 def test_parse_csv(client: FlaskClient):
-    from app.controllers import parse_csv
-
     parse_csv()
     products_count = db.session.query(m.Product).count()
     assert products_count == 11

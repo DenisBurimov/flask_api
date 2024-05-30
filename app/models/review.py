@@ -23,4 +23,4 @@ class Review(db.Model, ModelMixin):
     product: orm.Mapped["Product"] = orm.relationship(back_populates="reviews")
 
     def __repr__(self) -> str:
-        return f"<Review {self.asin} {self.title}>"
+        return f"<Review {self.title} of product: {self.product_id}>"
