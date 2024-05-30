@@ -24,14 +24,6 @@ def test_parse_csv(client: FlaskClient):
 
 
 def test_parse_command(runner: FlaskCliRunner):
-    result: Result = runner.invoke(
-        args=["parse-csv", "--path=tests/db/Products_Reviews-Products.csv"]
-    )
-
-    assert "CSV parsed successfully" in result.output
-
-    result: Result = runner.invoke(
-        args=["parse-csv", "--path=tests/db/Products_Reviews-Reviews.csv"]
-    )
+    result: Result = runner.invoke(args=["parse-csv"])
 
     assert "CSV parsed successfully" in result.output
