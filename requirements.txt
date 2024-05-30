@@ -1,0 +1,15 @@
+Flask
+flask-migrate
+alchemical
+python-dotenv
+psycopg2-binary
+pydantic
+pydantic-settings
+alchemical
+gunicorn
+pandas
+pytest
+pytest-env
+flake8
+black
+faker

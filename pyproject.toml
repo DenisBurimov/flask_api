@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore:.*cgi.*:DeprecationWarning",
+    'ignore:.*werkzeug\.urls\.url.*:DeprecationWarning',
+    'ignore:.*flask\.Markup.*:DeprecationWarning',
+]
+testpaths = ["tests"]
+
+[tool.pytest_env]
+APP_ENV = "testing"
