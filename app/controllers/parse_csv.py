@@ -8,55 +8,63 @@ def parse_csv(
     products_file: str = "tests/db/Products_Reviews-Products.csv",
     reviews_file: str = "tests/db/Products_Reviews-Reviews.csv",
 ) -> bool:
-    with open(products_file, "r") as f:
-        log(log.INFO, "Parsing products file [%s]", products_file)
-        lines = f.readlines()
-        for line in lines[1:]:
-            log(log.DEBUG, "Parsing line [%s]", line)
+    log(log.INFO, "Parsing products file [%s]", products_file)
+    product_df = pd.read_csv(products_file)
 
-            pattern = re.compile(r",(?!\w{10})")
-            replacement = ";"
-            clear_line = re.sub(pattern, replacement, line)
+    def clean_line(line):
+        pattern = re.compile(r",(?!\w{10})")
+        replacement = ";"
+        return re.sub(pattern, replacement, line)
 
-            title, asin = clear_line.split(",")
-            m.Product(
+    product_df = product_df.apply(
+        lambda x: x.map(clean_line) if x.dtype == "object" else x
+    )
+
+    for _, row in product_df.iterrows():
+        title = row["Title"].strip()
+        asin = row["Asin"].strip()
+
+        # Create and save the Product object
+        m.Product(
+            title=title,
+            asin=asin,
+        ).save(False)
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        log(log.ERROR, "Error parsing line [%s]: %s", row, e)
+        db.session.rollback()
+
+    reviews_df = pd.read_csv(reviews_file)
+    reviews_df = reviews_df.apply(
+        lambda x: x.map(clean_line) if x.dtype == "object" else x
+    )
+
+    for _, row in reviews_df.iterrows():
+        asin = row["Asin"].strip()
+        title = row["Title"].strip()
+        review = row["Review"].strip()
+
+        product_query = m.Product.select().where(m.Product.asin == asin.strip())
+        product: m.Product = db.session.scalar(product_query)
+        if product:
+            m.Review(
+                product=product,
                 title=title.strip(),
-                asin=asin.strip(),
+                review=review.strip(),
             ).save(False)
 
-        try:
-            db.session.commit()
-        except Exception as e:
-            log(log.ERROR, "Error parsing line [%s]: %s", line, e)
-            db.session.rollback()
-            return False
-
-    with open(reviews_file, "r") as f:
-        log(log.INFO, "Parsing reviews file [%s]", reviews_file)
-        lines = f.readlines()
-        for line in lines[1:]:
-            log(log.DEBUG, "Parsing line [%s]", line)
-
-            # pattern = re.compile(r",(?!\w{10})")
-            # replacement = ";"
-            # clear_line = re.sub(pattern, replacement, line)
-
-            asin, title, review = clear_line.split(",")
-            product_query = m.Product.select().where(m.Product.asin == asin.strip())
-            product: m.Product = db.session.scalar(product_query)
-            if product:
-                m.Review(
-                    product=product,
-                    title=title.strip(),
-                    review=review.strip(),
-                ).save(False)
-            else:
-                log(log.ERROR, "Product with ASIN [%s] not found", asin)
+    try:
+        db.session.commit()
+    except Exception as e:
+        log(log.ERROR, "Error parsing line [%s]: %s", row, e)
+        db.session.rollback()
 
         try:
             db.session.commit()
         except Exception as e:
-            log(log.ERROR, "Error parsing line [%s]: %s", line, e)
+            log(log.ERROR, "Error parsing line [%s]: %s", row, e)
             db.session.rollback()
             return False
 
